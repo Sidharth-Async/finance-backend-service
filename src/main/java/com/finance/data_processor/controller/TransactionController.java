@@ -3,6 +3,7 @@ package com.finance.data_processor.controller;
 
 import com.finance.data_processor.model.Transaction;
 import com.finance.data_processor.service.TransactionService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,7 @@ public class TransactionController {
 
     // Create a new transaction
     @PostMapping
-    public ResponseEntity<Transaction> createTransaction(@RequestBody Transaction transaction) {
+    public ResponseEntity<Transaction> createTransaction(@Valid @RequestBody Transaction transaction) {
 
         Transaction savedTransaction = transactionService.createTransaction(transaction);
         return new ResponseEntity<>(savedTransaction, HttpStatus.CREATED);
