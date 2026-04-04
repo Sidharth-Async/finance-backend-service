@@ -2,8 +2,11 @@ package com.finance.data_processor.controller;
 
 import com.finance.data_processor.dto.JwtResponse;
 import com.finance.data_processor.dto.LoginRequest;
+import com.finance.data_processor.model.Role;
+import com.finance.data_processor.model.RoleName;
 import com.finance.data_processor.model.User;
 import com.finance.data_processor.model.UserStatus;
+import com.finance.data_processor.repository.RoleRepository;
 import com.finance.data_processor.repository.UserRepository;
 import com.finance.data_processor.security.CustomUserDetailsService;
 import com.finance.data_processor.security.JwtUtil;
@@ -17,6 +20,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -37,6 +42,9 @@ public class AuthController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private RoleRepository roleRepository;
+
     // 1. REGISTER A NEW USER
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody LoginRequest request) {
@@ -50,7 +58,9 @@ public class AuthController {
         newUser.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         newUser.setStatus(UserStatus.ACTIVE);
 
-
+        Role viewerRole = roleRepository.findByName(RoleName.VIEWER)
+                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+        newUser.setRoles(Set.of(viewerRole));
         userRepository.save(newUser);
 
         return ResponseEntity.ok("User registered successfully!");
