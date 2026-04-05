@@ -1,14 +1,15 @@
 
 # 🏦 Finance Data Processor API
 
-A production-ready, secure RESTful backend service designed to manage personal financial transactions. This API demonstrates enterprise-grade architecture, featuring stateless JWT authentication, Role-Based Access Control (RBAC), robust data validation, and global exception handling.
+A production-ready, secure RESTful backend service designed to manage personal financial transactions. This API demonstrates enterprise-grade architecture, featuring stateless JWT authentication, Role-Based Access Control (RBAC), robust data validation, and dynamic database querying.
 
 ## 🚀 Key Features
 
 * **Stateless Authentication:** Secure user registration and login utilizing JSON Web Tokens (JWT) and BCrypt password encryption.
 * **Role-Based Access Control (RBAC):** Hierarchical permissions system enforcing strict access rules for `VIEWER` and `ADMIN` roles.
 * **User Data Isolation:** Database queries are automatically filtered by the authenticated JWT principal. Users can strictly only access their own financial records.
-* **Bulletproof Validation:** Jakarta Validation intercepts bad data before it reaches the service layer.
+* **Financial Dashboard Aggregation:** Calculates and returns real-time mathematical summaries (Total Income, Total Expenses, Net Balance) using Java Streams.
+* **Dynamic Record Filtering:** Utilizes custom JPQL queries to allow users to filter their transaction history dynamically via URL query parameters.
 * **Global Exception Handling:** A custom `@RestControllerAdvice` intercepts application errors and returns beautifully formatted, predictable JSON responses.
 
 ## 🛠️ Technology Stack
@@ -26,92 +27,99 @@ A production-ready, secure RESTful backend service designed to manage personal f
 src/main/java/com/finance/data_processor/
 ├── config/       # Database Seeders
 ├── controller/   # REST Endpoints
-├── dto/          # Data Transfer Objects
+├── dto/          # Data Transfer Objects (LoginRequest, DashboardSummary)
 ├── exception/    # GlobalExceptionHandler
 ├── model/        # JPA Entities (User, Role, Transaction)
-├── repository/   # Spring Data JPA Interfaces
+├── repository/   # Spring Data JPA Interfaces & Custom JPQL
 ├── security/     # JWT Utilities & Filters
-└── service/      # Core Business Logic
+└── service/      # Core Business Logic & Data Aggregation
+```
+
 ## ⚙️ Getting Started
 
 ### Prerequisites
 * Java Development Kit (JDK) 17 or higher
 * Maven installed
 
-### 1. Clone & Run (H2 Database Mode)
+### Run the Application (H2 Database Mode)
 By default, the application runs on a lightweight, in-memory H2 database. 
 
 ```bash
-git clone https://github.com/Sidharth-Async/finance-backend-service.git
+git clone https://github.com/Sidharth-Async/finance-backend-service
 cd finance-data-processor
 mvn spring-boot:run
 ```
-*Note: The system automatically seeds an Admin user (`superadmin` / `admin123`) and the required roles upon startup.*
-
-### 2. Upgrading to PostgreSQL (Optional)
-To switch to a persistent database, update your `src/main/resources/application.properties`:
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/finance_db
-spring.datasource.username=postgres
-spring.datasource.password=yourpassword
-spring.jpa.hibernate.ddl-auto=update
-```
+*(Note: The system automatically seeds an Admin user `admin` / `admin123` upon startup).*
 
 ## 📡 API Reference
 
-### Authentication (Public)
-| Method | Endpoint | Description | Payload |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/register` | Register a new user (`VIEWER` role) | `{ "username": "...", "password": "..." }` |
-| `POST` | `/api/auth/login` | Authenticate and receive a JWT | `{ "username": "...", "password": "..." }` |
+### 🔓 Authentication (Public)
+* **Register:** `POST /api/auth/register` 
+  * Registers a new user with the default `VIEWER` role.
+* **Login:** `POST /api/auth/login`
+  * Authenticates user and returns the JWT Bearer token.
 
-### Transactions (Requires JWT)
-*All requests must include the JWT in the `Authorization` header as a `Bearer` token.*
+### 🛡️ Transactions (Requires JWT)
+*All requests below must include the JWT in the `Authorization` header as a `Bearer` token.*
 
-| Method | Endpoint | Description | Access Level |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/transactions` | Create a new transaction | Authenticated Users |
-| `GET` | `/api/transactions` | Get transactions for the logged-in user | Authenticated Users |
-| `GET` | `/api/transactions/{id}`| Get a specific transaction by ID | Authenticated Users |
-| `DELETE`| `/api/transactions/{id}`| Delete a specific transaction | Authenticated Users |
+* **Create Transaction:** `POST /api/transactions`
+  * Creates a new record tied to the logged-in user.
+* **Get My Transactions:** `GET /api/transactions`
+  * Retrieves all transactions belonging to the logged-in user.
+  * *Optional Filters:* Append `?type=INCOME` or `?category=Salary` to filter results.
+* **Get Dashboard Summary:** `GET /api/transactions/summary`
+  * Returns calculated totals (Income, Expense, Net Balance) for the logged-in user.
+* **Get Single Transaction:** `GET /api/transactions/{id}`
+  * Retrieves a specific transaction (if owned by the user).
+* **Delete Transaction:** `DELETE /api/transactions/{id}`
+  * Deletes a specific transaction.
 
-### Admin Dashboard (Requires ADMIN Role)
-| Method | Endpoint | Description | Access Level |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/transactions/all` | View every transaction across all users | `ADMIN` Only |
+### 👑 Admin Dashboard (Requires ADMIN Role)
+* **Get All Data:** `GET /api/transactions/all`
+  * Allows admins to view every transaction across all users in the system.
 
 ## 🧪 Testing Guide (Postman)
 
-### Step 1: Register a User
-* **URL:** `POST http://localhost:8080/api/auth/register`
+**1. Register a User**
+* **Method:** `POST`
+* **URL:** `http://localhost:8080/api/auth/register`
 * **Body (Raw JSON):**
-  ```json
-  {
-      "username": "batman",
-      "password": "supersecretpassword"
-  }
-  ```
+```json
+{
+    "username": "batman",
+    "password": "supersecretpassword"
+}
+```
 
-### Step 2: Login to get JWT
-* **URL:** `POST http://localhost:8080/api/auth/login`
+**2. Login to get JWT**
+* **Method:** `POST`
+* **URL:** `http://localhost:8080/api/auth/login`
 * **Body (Raw JSON):** Same as above.
 * **Result:** Copy the `"token"` string from the response.
 
-### Step 3: Create a Transaction
-* **URL:** `POST http://localhost:8080/api/transactions`
+**3. Create a Transaction**
+* **Method:** `POST`
+* **URL:** `http://localhost:8080/api/transactions`
 * **Auth:** Select `Bearer Token` and paste your JWT.
 * **Body (Raw JSON):**
-  ```json
-  {
-      "amount": 125.50,
-      "type": "EXPENSE",
-      "category": "Groceries",
-      "date": "2026-04-04",
-      "description": "Weekly grocery run"
-  }
-  ```
+```json
+{
+    "amount": 5000.00,
+    "type": "INCOME",
+    "category": "Salary",
+    "date": "2026-04-05",
+    "description": "Monthly Salary"
+}
+```
 
-### Step 4: Test Admin Privileges (403 Forbidden)
-* **URL:** `GET http://localhost:8080/api/transactions/all`
-* **Auth:** Keep the `batman` token.
-* **Result:** You will receive a `403 Forbidden` because standard users cannot access the global ledger. Login as `superadmin` to access this endpoint.
+**4. View Dashboard Summary**
+* **Method:** `GET`
+* **URL:** `http://localhost:8080/api/transactions/summary`
+* **Auth:** Use your Bearer Token.
+* **Result:** Returns calculated totals of your injected data.
+
+**5. Test Dynamic Filters**
+* **Method:** `GET`
+* **URL:** `http://localhost:8080/api/transactions?type=INCOME`
+* **Auth:** Use your Bearer Token.
+* **Result:** Only returns transactions where the type strictly matches "INCOME".
