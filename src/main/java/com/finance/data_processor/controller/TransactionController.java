@@ -1,6 +1,7 @@
 package com.finance.data_processor.controller;
 
 
+import com.finance.data_processor.dto.DashboardSummary;
 import com.finance.data_processor.model.Transaction;
 import com.finance.data_processor.service.TransactionService;
 import jakarta.validation.Valid;
@@ -16,8 +17,11 @@ import java.util.List;
 @RequestMapping("/api/transactions")
 public class TransactionController {
 
-    @Autowired
-    private TransactionService transactionService;
+
+    private final TransactionService transactionService;
+    public TransactionController(TransactionService transactionService) {
+        this.transactionService = transactionService;
+    }
 
     // Create a new transaction
     @PostMapping
@@ -29,11 +33,14 @@ public class TransactionController {
 
     // Get all transactions
     @GetMapping
-    public ResponseEntity<List<Transaction>> getAllTransactions() {
-        List<Transaction> transactions = transactionService.getAllTransactions();
+    public ResponseEntity<List<Transaction>> getMyTransactions(
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String category) {
+        List<Transaction> transactions = transactionService.getFilteredTransactions(type, category);
         return new ResponseEntity<>(transactions, HttpStatus.OK);
     }
 
+    // for admin only
     @GetMapping("/all")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Transaction>> getEverySingleTransaction() {
@@ -53,5 +60,11 @@ public class TransactionController {
     public ResponseEntity<Void> deleteTransaction(@PathVariable Long id) {
         transactionService.deleteTransaction(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<DashboardSummary> getDashboardSummary() {
+        DashboardSummary summary = transactionService.getDashboardSummary();
+        return new ResponseEntity<>(summary, HttpStatus.OK);
     }
 }

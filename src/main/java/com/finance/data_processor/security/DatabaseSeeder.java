@@ -37,13 +37,13 @@ public class DatabaseSeeder {
                         .orElseThrow(() -> new RuntimeException("Admin role not found"));
 
                 User adminUser = new User();
-                adminUser.setUsername("superadmin");
+                adminUser.setUsername("admin");
                 adminUser.setPasswordHash(passwordEncoder.encode("admin123"));
                 adminUser.setStatus(UserStatus.ACTIVE);
                 adminUser.setRoles(Set.of(adminRole));
 
                 userRepository.save(adminUser);
-                System.out.println("Admin User created. Username: superadmin | Password: admin123");
+                System.out.println("Admin User created. Username: admin | Password: admin123");
             }
         };
     }

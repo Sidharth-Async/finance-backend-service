@@ -21,7 +21,7 @@ public class Transaction {
 
     @NotNull(message = "Amount cannot be null")
     @DecimalMin(value = "0.01", message = "Amount must be greater than zero")
-    private BigDecimal amount;
+    private double amount;
 
     @NotBlank(message = "Type is required (INCOME or EXPENSE)")
     private String type;
